@@ -27,14 +27,13 @@ public class FlappyBird extends ApplicationAdapter {
 	private float elapsedTime;
 	private BitmapFont font;
 
-	//ShapeRenderer shapeRenderer;
 	private Circle birdCollider;
 	private Rectangle[] bottomTubeColliders;
     private Rectangle[] topTubeColliders;
 
     private int score = 0;
     private int scoringTube = 0;
-	private int gameState = 0;
+	private int gameState = 0;      // 0=idle, 1=playing, 2=game over
     private float birdX, birdY;
     private int birdHeight, birdWidth;
     private float birdVelocity = 0;
@@ -56,7 +55,6 @@ public class FlappyBird extends ApplicationAdapter {
     private int tubeHeight;
 
     private static final int MIN_TUBE_POS = 200;
-    //private final int FONT_SCALE = 10;
     private static final int FONT_SIZE = 200;
 	
 	@Override
@@ -77,7 +75,7 @@ public class FlappyBird extends ApplicationAdapter {
         for (int i = 0; i < 2; i++){
             animationFrames[index++] = tmpFrames[0][i];
         }
-        //Gdx.app.log("Screen Height", Integer.toString(Gdx.graphics.getHeight()));
+
         animation = new Animation(1f/10f, animationFrames);
 
         birdHeight = animationFrames[0].getRegionHeight();
@@ -86,28 +84,27 @@ public class FlappyBird extends ApplicationAdapter {
         screenWidth = Gdx.graphics.getWidth();
         screenHeight = Gdx.graphics.getHeight();
 
-        //maxOffset = Gdx.graphics.getHeight() / 2 - gap / 2 - 100;
-
         tubeWidth = bottomTube.getWidth();
         tubeHeight = bottomTube.getHeight();
         maxOffset = -(tubeHeight + gap + MIN_TUBE_POS - screenHeight);
         minOffset = -(tubeHeight - MIN_TUBE_POS);
 
         gapOffSet = new Random();
-
         tubeSpacing = screenWidth * 3/4;
 
+        // Generates the colliders
         bottomTubeColliders = new Rectangle[numTubes];
         topTubeColliders = new Rectangle[numTubes];
+
         for(int i = 0; i < numTubes; i++){
             bottomTubeColliders[i] = new Rectangle();
             topTubeColliders[i] = new Rectangle();
         }
-        birdCollider = new Circle();
-        //shapeRenderer = new ShapeRenderer();
 
+        birdCollider = new Circle();
         tubes = new Tube[numTubes];
 
+        // Converts the true type font to a bitmap font
         FreeTypeFontGenerator generator = new FreeTypeFontGenerator(Gdx.files.internal("District.ttf"));
         FreeTypeFontGenerator.FreeTypeFontParameter parameter = new FreeTypeFontGenerator.FreeTypeFontParameter();
         parameter.size = FONT_SIZE;
@@ -117,10 +114,6 @@ public class FlappyBird extends ApplicationAdapter {
         generator.dispose();
 
         startGame();
-
-        /*font = new BitmapFont();
-        font.setColor(Color.WHITE);
-        font.getData().setScale(FONT_SCALE);*/
 	}
 
 	@Override
@@ -135,11 +128,14 @@ public class FlappyBird extends ApplicationAdapter {
             if (Gdx.input.justTouched()){
                 birdVelocity += bumpSpeed;
             }
-            //if(birdY > 0 || birdVelocity > 0) {
-                birdVelocity = birdVelocity - gravity * deltaTime;
+
+            // Some basic physics
+            birdVelocity = birdVelocity - gravity * deltaTime;
 
             float newY = birdY + birdVelocity;
 
+            // Pegs the bird at the top of the screen if it is going higher than the top
+            // since the colliders don't extend beyond the screen
             if(newY <= (screenHeight - birdHeight)){
                 birdY = newY;
             } else {
@@ -151,12 +147,14 @@ public class FlappyBird extends ApplicationAdapter {
                 gameState = 2;
             }
 
+            // increments score as player passing between pipes
             if (tubes[scoringTube].getXPos() <= (screenWidth / 2 - tubeWidth /2)) {
                 score++;
                 scoringTube = (scoringTube >= (numTubes - 1))? 0: scoringTube + 1;
                 Gdx.app.log("Score", Integer.toString(score));
             }
 
+            // Update the position of the tubes
             for (int i = 0; i < numTubes; i++){
                 tubes[i].setXPos(tubes[i].getXPos() - tubeXVelocity * deltaTime);
 
@@ -202,25 +200,6 @@ public class FlappyBird extends ApplicationAdapter {
 
         font.draw(batch, Integer.toString(score), 50, screenHeight - 25);
         batch.end();
-
-        /*shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
-        shapeRenderer.setColor(Color.BLUE);
-        shapeRenderer.circle(birdCollider.x, birdCollider.y, birdCollider.radius);
-
-        if (gameState !=2) {
-            for (int i = 0; i < numTubes; i++) {
-            shapeRenderer.rect(bottomTubeColliders[i].x, bottomTubeColliders[i].y, bottomTubeColliders[i].width, bottomTubeColliders[i].height);
-            shapeRenderer.rect(topTubeColliders[i].x, topTubeColliders[i].y, topTubeColliders[i].width, topTubeColliders[i].height);
-
-
-                if (Intersector.overlaps(birdCollider, bottomTubeColliders[i]) || Intersector.overlaps(birdCollider, topTubeColliders[i])) {
-                    Gdx.app.log("Collision", "Detected");
-                    gameState = 2;
-                }
-            }
-        }*/
-       // shapeRenderer.end();
-
 	}
 	
 	@Override
@@ -244,9 +223,6 @@ public class FlappyBird extends ApplicationAdapter {
 
         for (int i = 0; i < numTubes; i++){
             tubes[i] = new Tube(screenWidth + i * tubeSpacing, generateOffset());
-            //tubes[i] = new Tube(Gdx.graphics.getWidth() + i * tubeSpacing, -700);
-            //Gdx.app.log("X Positions", Float.toString(tubes[i].getXPos()));
-            //Gdx.app.log("Offsets", Integer.toString(tubes[i].getOffset()));
         }
     }
 
